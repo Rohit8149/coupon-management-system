@@ -72,20 +72,14 @@ pipeline {
                 echo "Environment: ${params.DEPLOY_ENV} | Profile: ${params.APP_PROFILE}"
                 echo '=============================================================================='
                 script {
-                    // 1. Terminate any previous instance on the target port
-                    bat """
-                    powershell -Command "Get-NetTCPConnection -LocalPort ${params.SERVER_PORT} -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id \$_.OwningProcess -Force -ErrorAction SilentlyContinue }"
-                    """
+                    // 1. Terminate any previous instance on the target port (safe exit 0)
+                    bat 'powershell -NoProfile -ExecutionPolicy Bypass -Command "try { Get-NetTCPConnection -LocalPort ' + params.SERVER_PORT + ' -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue } } catch {}; exit 0"'
 
                     // 2. Launch production artifact in background using parameterized port
-                    bat """
-                    powershell -Command "Start-Process -FilePath '${env.JAVA_HOME}\\bin\\java.exe' -ArgumentList '-Dserver.port=${params.SERVER_PORT}', '-jar', 'app\\target\\${env.ARTIFACT_NAME}' -WindowStyle Hidden"
-                    """
+                    bat 'powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath \'' + env.JAVA_HOME + '\\bin\\java.exe\' -ArgumentList \'-Dserver.port=' + params.SERVER_PORT + '\', \'-jar\', \'app\\target\\' + env.ARTIFACT_NAME + '\' -WindowStyle Hidden; exit 0"'
 
                     // 3. Health check verification against Actuator endpoint
-                    bat """
-                    powershell -Command "Write-Host 'Awaiting server readiness on port ${params.SERVER_PORT}...'; for (\$i = 1; \$i -le 25; \$i++) { Start-Sleep -Seconds 2; try { \$r = Invoke-RestMethod -Uri 'http://localhost:${params.SERVER_PORT}/actuator/health' -TimeoutSec 3; if (\$r.status -eq 'UP') { Write-Host '[SUCCESS] Application successfully deployed and healthy on port ${params.SERVER_PORT}!'; exit 0 } } catch {} }; Write-Error 'Health check failed: application did not report UP within 50 seconds.'; exit 1"
-                    """
+                    bat 'powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host \'Awaiting server readiness on port ' + params.SERVER_PORT + '...\'; for ($i = 1; $i -le 30; $i++) { Start-Sleep -Seconds 2; try { $r = Invoke-RestMethod -Uri \'http://localhost:' + params.SERVER_PORT + '/actuator/health\' -TimeoutSec 3; if ($r.status -eq \'UP\') { Write-Host \'[SUCCESS] Application successfully deployed and healthy on port ' + params.SERVER_PORT + '!\'; exit 0 } } catch {} }; Write-Error \'Health check failed\'; exit 1"'
                 }
             }
         }
