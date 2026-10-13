@@ -47,11 +47,23 @@ public class CouponService {
             throw new IllegalArgumentException("Coupon code cannot be empty");
         }
         String cleanCode = coupon.getCode().trim().toUpperCase();
+        if (!cleanCode.matches("^[A-Z0-9_-]{3,30}$")) {
+            throw new IllegalArgumentException("Coupon code must be between 3 and 30 alphanumeric characters");
+        }
         if (couponRepository.existsByCodeIgnoreCase(cleanCode)) {
-            throw new IllegalArgumentException("Coupon code '" + cleanCode + "' already exists");
+            throw new IllegalArgumentException("Coupon code '" + cleanCode + "' already exists! Please choose a unique code.");
         }
         if (coupon.getDiscountValue() == null || coupon.getDiscountValue() <= 0) {
             throw new IllegalArgumentException("Discount value must be greater than zero");
+        }
+        if ("PERCENTAGE".equalsIgnoreCase(coupon.getDiscountType()) && coupon.getDiscountValue() > 100.0) {
+            throw new IllegalArgumentException("Percentage discount cannot exceed 100%");
+        }
+        if (coupon.getMinOrderAmount() == null || coupon.getMinOrderAmount() < 0) {
+            throw new IllegalArgumentException("Minimum order amount cannot be negative");
+        }
+        if (coupon.getUsageLimit() == null || coupon.getUsageLimit() <= 0) {
+            throw new IllegalArgumentException("Usage limit must be at least 1 redemption");
         }
         if (coupon.getExpiryDate() == null || coupon.getExpiryDate().isBefore(LocalDate.now())) {
             throw new IllegalArgumentException("Expiry date must be in the future");
