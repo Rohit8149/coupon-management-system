@@ -63,11 +63,11 @@ env/
 .DS_Store
 Thumbs.db
 
-# Internal lab documentation, automation scripts, and planning (kept local)
-docs/
-scripts/
-templates/
-planning/
-screenshots/
-.agents/
-GEMINI.md
+# Internal lab documentation, automation scripts, and planning (kept local at root)
+/docs/
+/scripts/
+/templates/
+/planning/
+/screenshots/
+/.agents/
+/GEMINI.md

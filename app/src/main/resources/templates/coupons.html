@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coupons Directory - Coupon Management System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        body { background-color: #f8fafc; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+        .navbar-brand { font-weight: 700; letter-spacing: -0.5px; }
+        .badge-status { font-size: 0.8rem; font-weight: 600; padding: 0.4em 0.8em; border-radius: 6px; }
+        .badge-DRAFT { background-color: #e2e8f0; color: #475569; }
+        .badge-ACTIVE { background-color: #dcfce7; color: #166534; }
+        .badge-EXPIRED { background-color: #fee2e2; color: #991b1b; }
+        .badge-REDEEMED { background-color: #fef3c7; color: #92400e; }
+    </style>
+</head>
+<body>
+
+<!-- Navigation Bar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow-sm">
+    <div class="container">
+        <a class="navbar-brand d-flex align-items-center" href="/dashboard">
+            <i class="bi bi-ticket-perforated-fill text-warning me-2 fs-4"></i>
+            <span>Coupon Management System</span>
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-3">
+                <li class="nav-item">
+                    <a class="nav-link" id="navDashboard" href="/dashboard"><i class="bi bi-speedometer2 me-1"></i> Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" id="navCoupons" href="/coupons"><i class="bi bi-tags me-1"></i> Coupons Directory</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="navCreate" href="/coupons/create"><i class="bi bi-plus-circle me-1"></i> Create Coupon</a>
+                </li>
+            </ul>
+            <div class="d-flex align-items-center">
+                <a href="/actuator/health" target="_blank" class="btn btn-outline-success btn-sm me-2" id="healthCheckBtn">
+                    <i class="bi bi-heart-pulse-fill me-1"></i> Actuator Health
+                </a>
+                <span class="badge bg-secondary">Rohit Thatikonda (23102A0050)</span>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- Main Container -->
+<div class="container py-4">
+
+    <!-- Flash Messages -->
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show shadow-sm" role="alert" id="alertSuccess">
+        <i class="bi bi-check-circle-fill me-2"></i> <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert" id="alertError">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i> <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Header & Action -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="h3 mb-1 text-gray-800 fw-bold">Promotional Vouchers Directory</h2>
+            <p class="text-muted mb-0">Search, filter, inspect and transition coupon lifecycle statuses</p>
+        </div>
+        <a href="/coupons/create" class="btn btn-primary shadow-sm" id="btnCreateNew">
+            <i class="bi bi-plus-lg me-1"></i> Add New Coupon
+        </a>
+    </div>
+
+    <!-- Search & Filter Card -->
+    <div class="card shadow-sm border-0 rounded-3 mb-4 p-3 bg-white">
+        <form method="get" action="/coupons" id="searchFilterForm" class="row g-2 align-items-center">
+            <div class="col-md-6 col-lg-7">
+                <div class="input-group">
+                    <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
+                    <input type="text" name="query" id="searchInput" class="form-control" 
+                           placeholder="Search coupon code (e.g. WELCOME20)..." th:value="${query}">
+                </div>
+            </div>
+            <div class="col-md-4 col-lg-3">
+                <select name="status" id="statusFilter" class="form-select">
+                    <option value="ALL" th:selected="${status == 'ALL'}">All Statuses</option>
+                    <option value="DRAFT" th:selected="${status == 'DRAFT'}">DRAFT</option>
+                    <option value="ACTIVE" th:selected="${status == 'ACTIVE'}">ACTIVE</option>
+                    <option value="EXPIRED" th:selected="${status == 'EXPIRED'}">EXPIRED</option>
+                    <option value="REDEEMED" th:selected="${status == 'REDEEMED'}">REDEEMED</option>
+                </select>
+            </div>
+            <div class="col-md-2 col-lg-2 d-grid">
+                <button type="submit" class="btn btn-dark" id="btnSearchSubmit">
+                    <i class="bi bi-filter me-1"></i> Apply Filter
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Coupons Table Card -->
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="couponTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3">ID</th>
+                            <th>Code</th>
+                            <th>Description</th>
+                            <th>Discount</th>
+                            <th>Min Order</th>
+                            <th>Usage / Limit</th>
+                            <th>Expiry Date</th>
+                            <th>Status</th>
+                            <th class="text-end pe-3">Lifecycle Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="coupon : ${coupons}" th:id="'coupon-row-' + ${coupon.id}">
+                            <td class="ps-3 text-muted small" th:text="${coupon.id}">1</td>
+                            <td>
+                                <span class="fw-bold font-monospace text-primary fs-6" th:id="'coupon-code-' + ${coupon.id}" th:text="${coupon.code}">CODE</span>
+                            </td>
+                            <td class="small" th:text="${coupon.description}">Description</td>
+                            <td>
+                                <span class="badge bg-light text-dark border fw-bold" th:if="${coupon.discountType == 'PERCENTAGE'}" th:text="${coupon.discountValue + '% OFF'}"></span>
+                                <span class="badge bg-light text-dark border fw-bold" th:if="${coupon.discountType == 'FLAT'}" th:text="${'$' + coupon.discountValue + ' FLAT'}"></span>
+                            </td>
+                            <td th:text="${'$' + coupon.minOrderAmount}">$0</td>
+                            <td th:text="${coupon.redemptionCount + ' / ' + coupon.usageLimit}">0 / 100</td>
+                            <td class="small" th:text="${coupon.expiryDate}">2026-12-31</td>
+                            <td>
+                                <span th:class="'badge badge-status badge-' + ${coupon.status}" th:id="'coupon-status-' + ${coupon.id}" th:text="${coupon.status}">STATUS</span>
+                            </td>
+                            <td class="text-end pe-3">
+                                <!-- Action: Activate (if DRAFT) -->
+                                <form th:if="${coupon.status == 'DRAFT'}" th:action="@{'/coupons/' + ${coupon.id} + '/status'}" method="post" class="d-inline">
+                                    <input type="hidden" name="status" value="ACTIVE">
+                                    <button type="submit" class="btn btn-sm btn-outline-success" th:id="'btnActivate-' + ${coupon.id}" title="Activate Coupon">
+                                        <i class="bi bi-play-fill"></i> Activate
+                                    </button>
+                                </form>
+
+                                <!-- Action: Redeem (if ACTIVE) -->
+                                <form th:if="${coupon.status == 'ACTIVE'}" th:action="@{'/coupons/' + ${coupon.id} + '/redeem'}" method="post" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-outline-primary" th:id="'btnRedeem-' + ${coupon.id}" title="Redeem Coupon">
+                                        <i class="bi bi-cart-check"></i> Redeem
+                                    </button>
+                                </form>
+
+                                <!-- Action: Expire (if ACTIVE or DRAFT) -->
+                                <form th:if="${coupon.status == 'ACTIVE' or coupon.status == 'DRAFT'}" th:action="@{'/coupons/' + ${coupon.id} + '/status'}" method="post" class="d-inline ms-1">
+                                    <input type="hidden" name="status" value="EXPIRED">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" th:id="'btnExpire-' + ${coupon.id}" title="Expire Coupon">
+                                        <i class="bi bi-x-circle"></i> Expire
+                                    </button>
+                                </form>
+
+                                <span th:if="${coupon.status == 'EXPIRED' or coupon.status == 'REDEEMED'}" class="text-muted small fst-italic">
+                                    Closed
+                                </span>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(coupons)}">
+                            <td colspan="9" class="text-center py-5 text-muted" id="noCouponsMessage">
+                                <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                                No coupons matching your filter criteria.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
