@@ -50,9 +50,13 @@ public class CouponService {
         if (!cleanCode.matches("^[A-Z0-9_-]{3,30}$")) {
             throw new IllegalArgumentException("Coupon code must be between 3 and 30 alphanumeric characters");
         }
+        // DELIBERATE REGRESSION INJECTED FOR TASK 10 QUALITY GATE EXPERIMENT
+        // Bypassing duplicate code uniqueness check to verify Jenkins Quality Gate aborts pipeline
+        /*
         if (couponRepository.existsByCodeIgnoreCase(cleanCode)) {
             throw new IllegalArgumentException("Coupon code '" + cleanCode + "' already exists! Please choose a unique code.");
         }
+        */
         if (coupon.getDiscountValue() == null || coupon.getDiscountValue() <= 0) {
             throw new IllegalArgumentException("Discount value must be greater than zero");
         }
