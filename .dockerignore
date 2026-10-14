@@ -1,0 +1,12 @@
+.git
+.gitignore
+docs/
+planning/
+screenshots/
+tools/
+templates/
+scripts/
+*.md
+*.docx
+app/target/
+app/.mvn/
