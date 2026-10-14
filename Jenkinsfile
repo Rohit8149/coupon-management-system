@@ -33,6 +33,10 @@ pipeline {
                 echo 'STAGE 2: BUILD & COMPILE'
                 echo 'Compiling Java sources and verifying dependencies with Apache Maven'
                 echo '=============================================================================='
+                script {
+                    // Release any file lock on previous target artifacts by stopping previous deployment instance
+                    bat 'powershell -NoProfile -ExecutionPolicy Bypass -Command "try { Get-NetTCPConnection -LocalPort ' + params.SERVER_PORT + ' -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue } } catch {}; exit 0"'
+                }
                 dir("${env.APP_DIR}") {
                     bat 'call mvnw.cmd clean compile'
                 }
@@ -75,10 +79,13 @@ pipeline {
                     // 1. Terminate any previous instance on the target port (safe exit 0)
                     bat 'powershell -NoProfile -ExecutionPolicy Bypass -Command "try { Get-NetTCPConnection -LocalPort ' + params.SERVER_PORT + ' -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue } } catch {}; exit 0"'
 
-                    // 2. Launch production artifact in background using parameterized port
-                    bat 'powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath \'' + env.JAVA_HOME + '\\bin\\java.exe\' -ArgumentList \'-Dserver.port=' + params.SERVER_PORT + '\', \'-jar\', \'app\\target\\' + env.ARTIFACT_NAME + '\' -WindowStyle Hidden; exit 0"'
+                    // 2. Copy production artifact to dedicated deploy directory to decouple from target build dir
+                    bat 'if not exist deploy mkdir deploy && copy /y app\\target\\' + env.ARTIFACT_NAME + ' deploy\\running-app.jar'
 
-                    // 3. Health check verification against Actuator endpoint
+                    // 3. Launch production artifact in background using parameterized port
+                    bat 'powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath \'' + env.JAVA_HOME + '\\bin\\java.exe\' -ArgumentList \'-Dserver.port=' + params.SERVER_PORT + '\', \'-jar\', \'deploy\\running-app.jar\' -WindowStyle Hidden; exit 0"'
+
+                    // 4. Health check verification against Actuator endpoint
                     bat 'powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host \'Awaiting server readiness on port ' + params.SERVER_PORT + '...\'; for ($i = 1; $i -le 30; $i++) { Start-Sleep -Seconds 2; try { $r = Invoke-RestMethod -Uri \'http://localhost:' + params.SERVER_PORT + '/actuator/health\' -TimeoutSec 3; if ($r.status -eq \'UP\') { Write-Host \'[SUCCESS] Application successfully deployed and healthy on port ' + params.SERVER_PORT + '!\'; exit 0 } } catch {} }; Write-Error \'Health check failed\'; exit 1"'
                 }
             }
