@@ -9,13 +9,6 @@
 [![Container](https://img.shields.io/badge/Container-Docker-2496ED.svg)]()
 [![Config](https://img.shields.io/badge/Config-Ansible-EE0000.svg)]()
 
-> **DevOps Laboratory Project (Semester VII – Computer Engineering)**  
-> **Student Name:** Rohit Thatikonda  
-> **Roll Number:** 23102A0050  
-> **Serial Number:** 47  
-> **Subject In-charge / Evaluator:** Dr. Snehal Andhare  
-> **Assigned Project Title:** Selenium Testing Pipeline for a Coupon Management System  
-
 ---
 
 ## 1. Project Overview
@@ -165,11 +158,3 @@ The system follows a clean 4-tier monolithic architecture:
 
 ---
 
-## 8. Author & Academic Details
-
-* **Student:** Rohit Thatikonda
-* **Roll Number:** 23102A0050 (Serial No: 47)
-* **Program:** B.E. Semester VII – Computer Engineering
-* **Course:** DevOps Lab
-* **Institution:** Department of Computer Engineering
-* **Subject In-charge / Evaluator:** Dr. Snehal Andhare
